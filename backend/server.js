@@ -35,6 +35,133 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
 /**
+ * Returns a friendly HTML welcome & status dashboard when visiting root '/'
+ */
+function getWelcomeHtml(host) {
+  const isKeySet = Boolean(GEMINI_API_KEY && GEMINI_API_KEY.length > 5);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PortalMind AI - Backend Live</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      margin-bottom: 16px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+    p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; }
+    .endpoints {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+    .endpoint-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #1e293b;
+      font-size: 13px;
+    }
+    .endpoint-item:last-child { border-bottom: none; }
+    .method {
+      font-weight: 700;
+      font-family: monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .method-get { background: #064e3b; color: #34d399; }
+    .method-post { background: #312e81; color: #818cf8; }
+    .path { font-family: monospace; color: #e2e8f0; }
+    .status-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .status-ok { background: #065f46; color: #a7f3d0; }
+    .status-warn { background: #78350f; color: #fde68a; }
+    .cta-btn {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">
+      <span class="dot"></span>
+      Backend Server Active & Ready
+    </div>
+    <h1>PortalMind AI Backend</h1>
+    <p>Your secure cloud AI proxy is live. It accepts question solving requests from the PortalMind Chrome Extension and connects to Google Gemini.</p>
+
+    <div class="endpoints">
+      <div class="endpoint-item">
+        <div>
+          <span class="method method-get">GET</span>
+          <span class="path">/api/health</span>
+        </div>
+        <span class="status-tag status-ok">Online</span>
+      </div>
+      <div class="endpoint-item">
+        <div>
+          <span class="method method-post">POST</span>
+          <span class="path">/api/solve</span>
+        </div>
+        <span class="status-tag ${isKeySet ? 'status-ok' : 'status-warn'}">
+          ${isKeySet ? 'Gemini Key Configured' : 'Needs GEMINI_API_KEY in Vercel'}
+        </span>
+      </div>
+    </div>
+
+    <a href="/api/health" class="cta-btn">View Health JSON Status</a>
+  </div>
+</body>
+</html>`;
+}
+
+/**
  * Build structured prompt
  */
 function createPrompt(question, options = [], type = 'mcq', explanationLevel = 'detailed') {
@@ -86,7 +213,7 @@ async function handleSolve(req, res, body) {
     if (!GEMINI_API_KEY) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
-        error: 'Backend error: GEMINI_API_KEY is not configured in .env. Please set GEMINI_API_KEY in college-portal-ai-extension/backend/.env or enter your key in the extension Options page.'
+        error: 'Backend error: GEMINI_API_KEY is not configured in Vercel. Please add GEMINI_API_KEY in Vercel Project Settings > Environment Variables, or enter your Gemini key in the Extension Options page.'
       }));
       return;
     }
@@ -165,6 +292,13 @@ const server = http.createServer((req, res) => {
   }
 
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+
+  // Root welcome page
+  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '')) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(getWelcomeHtml(req.headers.host));
+    return;
+  }
 
   if (req.method === 'GET' && url.pathname === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });

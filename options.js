@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load existing settings
   const config = await chrome.storage.sync.get({
     apiMode: 'backend',
-    backendUrl: 'http://localhost:3001/api/solve',
+    backendUrl: 'https://backend-liart-nu-yxtysqqlih.vercel.app/api/solve',
     geminiApiKey: '',
     geminiModel: 'gemini-1.5-flash',
     explanationLevel: 'detailed'

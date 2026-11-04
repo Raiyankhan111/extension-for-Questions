@@ -5,7 +5,7 @@
 
 const DEFAULT_CONFIG = {
   apiMode: 'backend', // 'backend' or 'direct'
-  backendUrl: 'http://localhost:3001/api/solve',
+  backendUrl: 'https://backend-liart-nu-yxtysqqlih.vercel.app/api/solve',
   geminiApiKey: '',
   geminiModel: 'gemini-1.5-flash',
   explanationLevel: 'detailed', // 'concise' or 'detailed'

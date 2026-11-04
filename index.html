@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex College Portal - Midterm Exam: CS301</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .portal-nav {
+      background: #1e293b;
+      color: white;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #6366f1;
+    }
+    .portal-nav h2 { font-size: 18px; font-weight: 700; }
+    .portal-nav .meta { font-size: 13px; color: #94a3b8; }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .exam-header {
+      background: white;
+      padding: 20px 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #ede9fe;
+      color: #6366f1;
+    }
+    .question-card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: all 0.2s ease;
+    }
+    .question-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: #0f172a;
+    }
+    .qtext {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .options-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .option-label:hover {
+      background: #f1f5f9;
+      border-color: #6366f1;
+    }
+    textarea.theory-answer {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+    pre.code-editor {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 14px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+    .portal-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .portal-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-primary {
+      background: #6366f1;
+      color: white;
+    }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .pagination-bar {
+      display: flex;
+      gap: 8px;
+    }
+    .page-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .page-num.active {
+      background: #6366f1;
+      color: white;
+      border-color: #6366f1;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="portal-nav">
+    <div>
+      <h2>Apex University Learning Management Portal</h2>
+      <span class="meta">Student: Raiyan Khan (ID: CS-2026-89)</span>
+    </div>
+    <div>
+      <span class="badge">Course: CS301 Algorithms Midterm</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="exam-header">
+      <div>
+        <h3>Section A: Technical Assessments</h3>
+        <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Total Questions: 3 | Answer all questions</p>
+      </div>
+      <div class="pagination-bar">
+        <button class="page-num active" onclick="switchQuestion(1)">1</button>
+        <button class="page-num" onclick="switchQuestion(2)">2</button>
+        <button class="page-num" onclick="switchQuestion(3)">3</button>
+      </div>
+    </div>
+
+    <!-- Question 1: MCQ -->
+    <div id="qview1" class="question-card que">
+      <div class="question-title">
+        <span class="badge">Question 1 (MCQ)</span>
+      </div>
+      <div class="qtext">
+        Which of the following data structures operates on a strict Last-In, First-Out (LIFO) order, and what is the time complexity of its push and pop operations?
+      </div>
+      <div class="options-group formulation">
+        <label class="option-label" for="q1_optA">
+          <input type="radio" name="q1" id="q1_optA" value="A">
+          <span>A) Queue, with O(1) push and O(n) pop</span>
+        </label>
+        <label class="option-label" for="q1_optB">
+          <input type="radio" name="q1" id="q1_optB" value="B">
+          <span>B) Stack, with O(1) push and O(1) pop</span>
+        </label>
+        <label class="option-label" for="q1_optC">
+          <input type="radio" name="q1" id="q1_optC" value="C">
+          <span>C) Binary Search Tree, with O(log n) push and pop</span>
+        </label>
+        <label class="option-label" for="q1_optD">
+          <input type="radio" name="q1" id="q1_optD" value="D">
+          <span>D) Priority Queue, with O(n) push and pop</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Question 2: Theory -->
+    <div id="qview2" class="question-card que" style="display: none;">
+      <div class="question-title">
+        <span class="badge">Question 2 (Theory)</span>
+      </div>
+      <div class="qtext">
+        Explain the fundamental differences between Dijkstra's Algorithm and the Bellman-Ford Algorithm for finding the single-source shortest path in weighted graphs. Specifically address how each handles negative edge weights and their respective time complexities.
+      </div>
+      <div>
+        <textarea class="theory-answer" placeholder="Type your answer here for PortalMind to inspect..."></textarea>
+      </div>
+    </div>
+
+    <!-- Question 3: Coding -->
+    <div id="qview3" class="question-card que problem-statement" style="display: none;">
+      <div class="question-title">
+        <span class="badge">Question 3 (Coding Challenge)</span>
+      </div>
+      <div class="qtext">
+        Write a function <code>reverseLinkedList(head)</code> in Python or JavaScript that reverses a singly linked list in-place. Your solution must run in <strong>O(n)</strong> time complexity and utilize <strong>O(1)</strong> auxiliary space.
+      </div>
+      <pre class="code-editor"># Given definition of singly-linked list:
+# class ListNode:
+#     def __init__(self, val=0, next=None):
+#         self.val = val
+#         self.next = next
+
+def reverseLinkedList(head):
+    # TODO: Write your in-place reversal logic here
+    pass</pre>
+      <textarea class="theory-answer" placeholder="Enter solution code..."></textarea>
+    </div>
+
+    <!-- Portal Navigation Controls -->
+    <div class="portal-controls">
+      <button id="portalPrevBtn" class="portal-btn btn-secondary" onclick="prevStep()">Previous</button>
+      <span style="font-size: 13px; color: #64748b;">Do not refresh during assessment</span>
+      <div style="display: flex; gap: 10px;">
+        <button id="portalNextBtn" class="portal-btn btn-primary" onclick="nextStep()">Next Question</button>
+        <button class="portal-btn btn-danger" onclick="alert('Submission button blocked during review!')">Submit Exam</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentQ = 1;
+    function switchQuestion(num) {
+      currentQ = num;
+      document.querySelectorAll('.question-card').forEach((el, idx) => {
+        el.style.display = (idx + 1 === num) ? 'block' : 'none';
+      });
+      document.querySelectorAll('.page-num').forEach((el, idx) => {
+        if (idx + 1 === num) el.classList.add('active');
+        else el.classList.remove('active');
+      });
+    }
+
+    function nextStep() {
+      if (currentQ < 3) switchQuestion(currentQ + 1);
+    }
+
+    function prevStep() {
+      if (currentQ > 1) switchQuestion(currentQ - 1);
+    }
+  </script>
+</body>
+</html>
