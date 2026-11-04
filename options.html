@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PortalMind Settings & AI Configuration</title>
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+      overflow-y: auto;
+      background: #f8fafc;
+    }
+
+    .options-wrapper {
+      max-width: 650px;
+      width: 100%;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+
+    .options-header {
+      background: var(--primary-gradient);
+      padding: 24px 30px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .options-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .options-header p {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    .options-body {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .setting-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    }
+
+    .radio-pill-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .radio-card {
+      flex: 1;
+      border: 2px solid #e2e8f0;
+      padding: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .radio-card.active {
+      border-color: #8b5cf6;
+      background: #faf5ff;
+    }
+
+    .radio-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .radio-card-desc {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .status-msg {
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .status-msg.success {
+      color: #059669;
+      display: block;
+    }
+
+    .status-msg.error {
+      color: #dc2626;
+      display: block;
+    }
+
+    .hint-box {
+      background: #f1f5f9;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .hint-box code {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="options-wrapper">
+    <div class="options-header">
+      <div class="logo-icon" style="width: 44px; height: 44px;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>PortalMind Settings</h1>
+        <p>Configure your AI provider, model preferences, and backend connection.</p>
+      </div>
+    </div>
+
+    <div class="options-body">
+      
+      <!-- Integration Mode Selection -->
+      <div class="setting-group">
+        <label class="setting-label">AI Connection Architecture</label>
+        <span class="setting-desc">Choose between using your secure self-hosted backend or entering a direct Gemini API key.</span>
+        
+        <div class="radio-pill-group">
+          <div id="modeBackend" class="radio-card active">
+            <div class="radio-card-title">
+              <span>🛡️</span> Secure Backend Server
+            </div>
+            <div class="radio-card-desc">Recommended. Keeps API keys hidden on your private local/cloud server.</div>
+          </div>
+
+          <div id="modeDirect" class="radio-card">
+            <div class="radio-card-title">
+              <span>⚡</span> Direct Gemini API
+            </div>
+            <div class="radio-card-desc">Call Google Gemini API directly from the browser extension.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backend Server URL Field -->
+      <div id="backendSection" class="setting-group">
+        <label class="setting-label" for="backendUrl">Backend Server Endpoint</label>
+        <span class="setting-desc">The URL of your running PortalMind Express backend server.</span>
+        <input type="text" id="backendUrl" class="input-field" placeholder="http://localhost:3001/api/solve">
+      </div>
+
+      <!-- Gemini API Key Field -->
+      <div id="geminiSection" class="setting-group" style="display: none;">
+        <label class="setting-label" for="geminiApiKey">Google Gemini API Key</label>
+        <span class="setting-desc">Get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #6366f1;">Google AI Studio</a>.</span>
+        <input type="password" id="geminiApiKey" class="input-field" placeholder="AIzaSy...">
+      </div>
+
+      <!-- Model Selector -->
+      <div class="setting-group">
+        <label class="setting-label" for="geminiModel">AI Model</label>
+        <span class="setting-desc">Select the AI model for answering portal questions.</span>
+        <select id="geminiModel" class="input-field">
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Super Fast & Highly Accurate)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen Fast Reasoning)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning for Complex Code)</option>
+        </select>
+      </div>
+
+      <!-- Explanation Depth -->
+      <div class="setting-group">
+        <label class="setting-label" for="explanationLevel">Explanation Style</label>
+        <span class="setting-desc">Control the depth of step-by-step logic and tips.</span>
+        <select id="explanationLevel" class="input-field">
+          <option value="detailed">Detailed (Step-by-step reasoning + Option elimination)</option>
+          <option value="concise">Concise (Direct reasoning + Quick summary)</option>
+        </select>
+      </div>
+
+      <!-- Quick Setup Instructions -->
+      <div class="hint-box">
+        <strong>🚀 Quick Backend Setup:</strong>
+        To run the secure backend locally, open a terminal in <code>college-portal-ai-extension/backend</code> and run:
+        <br><code>npm install && npm start</code>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions-bar">
+        <div style="display: flex; gap: 10px;">
+          <button id="testBtn" class="action-btn secondary-btn" style="padding: 10px 16px;">
+            Test Connection
+          </button>
+          <button id="clearCacheBtn" class="action-btn secondary-btn" style="padding: 10px 16px;">
+            Clear Cache
+          </button>
+        </div>
+
+        <button id="saveBtn" class="primary-btn" style="padding: 10px 24px;">
+          Save Settings
+        </button>
+      </div>
+
+      <div id="statusMsg" class="status-msg"></div>
+
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
