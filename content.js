@@ -1,6 +1,6 @@
 /**
  * PortalMind - Content Script
- * Robust question extractor and navigator for college portals & LMS platforms.
+ * Robust question extractor and navigator for college portals & LMS platforms (Newton School, Canvas, Moodle, etc.).
  * Safe by design: NEVER clicks submit or bypasses portal integrity.
  */
 
@@ -15,7 +15,7 @@
   let observer = null;
   let activeHighlightElement = null;
 
-  // Custom styling for active question highlight on page
+  // Custom styling for active question highlight and in-page solver widget
   const styleEl = document.createElement('style');
   styleEl.textContent = `
     .portalmind-question-highlight {
@@ -40,6 +40,55 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
       z-index: 99999 !important;
       pointer-events: none !important;
+    }
+
+    /* Floating quick-solve button on college portal */
+    #portalmind-floating-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999999;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 30px;
+      padding: 10px 18px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #portalmind-floating-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+    }
+
+    /* Floating in-page answer drawer */
+    #portalmind-floating-card {
+      position: fixed;
+      bottom: 76px;
+      right: 24px;
+      width: 380px;
+      max-height: 520px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.2);
+      border: 1px solid #e2e8f0;
+      z-index: 999999;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      animation: pmSlideUp 0.25s ease-out;
+    }
+    @keyframes pmSlideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   `;
   document.head?.appendChild(styleEl);
@@ -72,8 +121,12 @@
    */
   function determineQuestionType(container, options) {
     const text = (container.innerText || '').toLowerCase();
-    const hasCodeBlock = container.querySelector('pre, code, .monaco-editor, .ace_editor, textarea.code');
-    const codingKeywords = ['write a function', 'return the', 'def ', 'public class', 'function ', 'time complexity', 'space complexity', 'input format', 'output format', 'constraints:'];
+    const hasCodeBlock = container.querySelector('pre, code, .monaco-editor, .ace_editor, textarea.code, [class*="editor"]');
+    const codingKeywords = [
+      'write a function', 'return the', 'def ', 'public class', 'function ',
+      'time complexity', 'space complexity', 'input format', 'output format',
+      'constraints:', 'sample input', 'sample output', 'newton school'
+    ];
     const isCodingMatch = codingKeywords.some(kw => text.includes(kw));
 
     if (hasCodeBlock || isCodingMatch) {
@@ -84,7 +137,6 @@
       return 'mcq';
     }
 
-    // Check if open answer textarea / text input exists
     const hasInput = container.querySelector('textarea, input[type="text"]');
     if (hasInput || text.includes('explain') || text.includes('describe') || text.includes('what is') || text.includes('discuss')) {
       return 'theory';
@@ -118,32 +170,34 @@
 
         const cleaned = cleanText(labelText);
         if (cleaned) {
-          const keyLetter = String.fromCharCode(65 + idx); // A, B, C, D...
+          const keyLetter = String.fromCharCode(65 + idx);
           options.push({
             letter: keyLetter,
-            text: cleaned.replace(/^[A-Da-d][\.\)\:\-]\s*/, '') // remove existing leading A. if present
+            text: cleaned.replace(/^[A-Da-d][\.\)\:\-]\s*/, '')
           });
         }
       });
       if (options.length >= 2) return options;
     }
 
-    // Approach 2: List items (ul/ol) or specific portal classes (.answer, .option, .choice, etc.)
+    // Approach 2: Newton School, Canvas, and standard LMS option cards
     const optionElements = container.querySelectorAll(
-      '.answer div, .answer li, .option, .choice, .quiz-option, .form-check, [role="radio"], [role="checkbox"], ul.options li, ol.options li'
+      '[class*="option"], [class*="Option"], [class*="choice"], .answer div, .answer li, .quiz-option, .form-check, [role="radio"], [role="checkbox"], ul.options li, ol.options li'
     );
     if (optionElements.length >= 2) {
-      optionElements.forEach((el, idx) => {
+      const uniqueTexts = new Set();
+      optionElements.forEach((el) => {
         const text = cleanText(el.innerText);
-        if (text && text.length > 0) {
-          const keyLetter = String.fromCharCode(65 + idx);
+        if (text && text.length > 0 && text.length < 200 && !uniqueTexts.has(text)) {
+          uniqueTexts.add(text);
+          const keyLetter = String.fromCharCode(65 + options.length);
           options.push({
             letter: keyLetter,
             text: text.replace(/^[A-Da-d][\.\)\:\-]\s*/, '')
           });
         }
       });
-      if (options.length >= 2) return options;
+      if (options.length >= 2 && options.length <= 6) return options;
     }
 
     // Approach 3: Regex match A), B), C), D) in plain text
@@ -164,29 +218,30 @@
    * Extract question text without options text and UI noise
    */
   function extractQuestionText(container, options) {
-    // Clone container to avoid modifying DOM
     const clone = container.cloneNode(true);
 
-    // Remove buttons, inputs, scripts, SVGs, styles
     const removeSelectors = [
       'button', 'script', 'style', 'svg', 'input',
       '.portalmind-badge', '.badge', '.nav', '.footer',
-      '.feedback', '.grading-summary'
+      '.feedback', '.grading-summary', '#portalmind-floating-btn', '#portalmind-floating-card'
     ];
     removeSelectors.forEach(sel => {
       clone.querySelectorAll(sel).forEach(el => el.remove());
     });
 
-    // Check for specific question body selectors in popular LMS
+    // Targeted LMS & Newton School problem statement selectors
     const lmsQuestionTextSelectors = [
+      '[class*="problem-statement"]',
+      '[class*="ProblemStatement"]',
+      '[class*="question-statement"]',
+      '[class*="question_description"]',
+      '[class*="problem-description"]',
+      '[class*="questionBody"]',
+      '[class*="QuestionCard"]',
       '.qtext',                  // Moodle
       '.question_text',          // Canvas
       '.vtbegenerated',          // Blackboard
-      '[data-params*="question"]', // Google forms
-      '.problem-description',    // Coding portals
-      '.question-prompt',
-      '.prompt',
-      '.question-statement'
+      '[data-params*="question"]'
     ];
 
     for (const sel of lmsQuestionTextSelectors) {
@@ -198,7 +253,6 @@
 
     let text = cleanText(clone.innerText);
 
-    // Remove extracted option texts from the main question text to keep it concise
     if (options && options.length > 0) {
       options.forEach(opt => {
         if (opt.text && opt.text.length > 3) {
@@ -217,21 +271,23 @@
     const list = [];
     const seenTexts = new Set();
 
-    // Multi-platform container selectors
+    // Multi-platform container selectors (Newton School, Canvas, Moodle, HackerRank, etc.)
     const containerSelectors = [
-      '.que',                              // Moodle
-      '.display_question',                 // Canvas
-      '.question_holder',                  // Canvas alternate
-      '.takeQuestionDiv',                  // Blackboard
-      '[role="listitem"]',                 // Google Forms
-      '.d2l-quiz-question',                // D2L
-      '.quiz-item',
-      '.question-card',
-      '.question-container',
-      '.problem-statement',               // HackerRank/Codeforces
+      '[class*="ProblemStatement"]',
+      '[class*="question-container"]',
+      '[class*="problem-statement"]',
+      '[class*="questionCard"]',
+      '[class*="QuestionCard"]',
+      '[class*="question-card"]',
+      '[class*="quiz-item"]',
+      '.que',
+      '.display_question',
+      '.question_holder',
+      '.takeQuestionDiv',
+      '[role="listitem"]',
+      '.d2l-quiz-question',
       '[data-question-id]',
-      'fieldset[class*="question"]',
-      'div[class*="question-box"]'
+      'fieldset[class*="question"]'
     ];
 
     let foundContainers = [];
@@ -243,18 +299,18 @@
       }
     }
 
-    // Fallback: If no recognized structure found, search for fieldsets, form groups, or active article/main
+    // Fallback: search for fieldsets or cards containing questions
     if (foundContainers.length === 0) {
-      const generalContainers = Array.from(document.querySelectorAll('fieldset, form .form-group, .card, article'));
+      const generalContainers = Array.from(document.querySelectorAll('fieldset, form .form-group, .card, article, [class*="problem"], [class*="contest"]'));
       foundContainers = generalContainers.filter(el => {
         const text = el.innerText || '';
         return text.length > 30 && (text.includes('?') || el.querySelectorAll('input[type="radio"]').length >= 2);
       });
     }
 
-    // Ultimate Fallback: Single question view (entire main body or active wrapper)
+    // Single question full page fallback (Newton School active problem view)
     if (foundContainers.length === 0) {
-      const main = document.querySelector('main, #content, .content, .container, [role="main"]');
+      const main = document.querySelector('main, #content, .content, .container, [role="main"], [class*="problemView"], [class*="assessment"]');
       if (main && (main.innerText || '').length > 20) {
         foundContainers = [main];
       }
@@ -290,7 +346,6 @@
    * Highlight the active question on the student's webpage
    */
   function highlightQuestion(index) {
-    // Remove previous highlight
     if (activeHighlightElement) {
       activeHighlightElement.classList.remove('portalmind-question-highlight');
       const oldBadge = activeHighlightElement.querySelector('.portalmind-badge');
@@ -315,20 +370,20 @@
   }
 
   /**
-   * Attempt to find and safely click portal's "Next" button
+   * Navigate Next safely on portal
    */
   function navigateNext() {
     const buttons = Array.from(document.querySelectorAll('button, a, input[type="button"], input[type="submit"]'));
     const nextBtn = buttons.find(b => {
       const text = (b.innerText || b.value || b.getAttribute('aria-label') || '').trim();
-      const isDangerous = isSubmissionButton(text);
-      if (isDangerous) return false;
+      if (isSubmissionButton(text)) return false;
 
       const lower = text.toLowerCase();
       return (
         lower === 'next' ||
         lower.startsWith('next ') ||
         lower.includes('next question') ||
+        lower.includes('next problem') ||
         lower === 'forward' ||
         lower === '>' ||
         lower === '»'
@@ -339,11 +394,11 @@
       nextBtn.click();
       return { success: true, message: 'Navigated to next question.' };
     }
-    return { success: false, message: 'Portal Next button not found or it is an exam submit button.' };
+    return { success: false, message: 'Next question button not found.' };
   }
 
   /**
-   * Attempt to find and safely click portal's "Previous" button
+   * Navigate Prev safely on portal
    */
   function navigatePrev() {
     const buttons = Array.from(document.querySelectorAll('button, a, input[type="button"]'));
@@ -356,7 +411,8 @@
         lower === 'previous' ||
         lower === 'prev' ||
         lower.startsWith('prev ') ||
-        lower.includes('previous question') ||
+        lower.includes('prev question') ||
+        lower.includes('previous problem') ||
         lower === '<' ||
         lower === '«'
       );
@@ -366,50 +422,43 @@
       prevBtn.click();
       return { success: true, message: 'Navigated to previous question.' };
     }
-    return { success: false, message: 'Portal Previous button not found.' };
+    return { success: false, message: 'Previous question button not found.' };
   }
 
   /**
-   * Fallback: Extract selected text on page if student selected a question manually
+   * Create Floating In-Page Widget for quick solving right on Newton School / College Portal
    */
-  function getSelectedTextQuestion() {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
+  function injectFloatingWidget() {
+    if (document.getElementById('portalmind-floating-btn')) return;
 
-    const raw = selection.toString().trim();
-    if (raw.length < 10) return null;
+    const floatBtn = document.createElement('button');
+    floatBtn.id = 'portalmind-floating-btn';
+    floatBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      <span>Solve Question</span>
+    `;
 
-    // Check if selection contains options
-    const options = [];
-    const regex = /(?:^|\n)\s*([A-D])[\.\)\:\-]\s+([^\n]+)/g;
-    let match;
-    while ((match = regex.exec(raw)) !== null) {
-      options.push({
-        letter: match[1].toUpperCase(),
-        text: cleanText(match[2])
+    floatBtn.addEventListener('click', () => {
+      // Trigger extension popup or quick solve notification
+      chrome.runtime.sendMessage({
+        action: 'SOLVE_CURRENT_ACTIVE'
       });
-    }
-
-    let qText = raw;
-    options.forEach(opt => {
-      qText = qText.replace(opt.text, '');
+      // Detect and highlight
+      const qs = detectQuestions();
+      if (qs.length > 0) {
+        highlightQuestion(0);
+      }
     });
 
-    return {
-      index: 0,
-      portalNumber: 1,
-      type: options.length >= 2 ? 'mcq' : 'theory',
-      text: cleanText(qText),
-      options,
-      isSelection: true
-    };
+    document.body.appendChild(floatBtn);
   }
 
-  // Observe dynamic question transitions in Single Page Applications
+  // Observe dynamic question transitions in SPAs (like Newton School)
   function setupMutationObserver() {
     if (observer) observer.disconnect();
     observer = new MutationObserver(() => {
-      // Re-scan when DOM changes significantly
       detectQuestions();
     });
     observer.observe(document.body, {
@@ -418,11 +467,16 @@
     });
   }
 
-  // Initial detection
+  // Initial detection & setup
   detectQuestions();
   setupMutationObserver();
+  if (document.body) {
+    injectFloatingWidget();
+  } else {
+    window.addEventListener('DOMContentLoaded', injectFloatingWidget);
+  }
 
-  // Listen for messages from popup or background service worker
+  // Runtime messaging
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
       case 'DETECT_QUESTIONS': {
@@ -442,19 +496,6 @@
       }
 
       case 'GET_CURRENT_QUESTION': {
-        // First check if user highlighted text
-        const selectionQ = getSelectedTextQuestion();
-        if (selectionQ) {
-          sendResponse({
-            success: true,
-            question: selectionQ,
-            total: 1,
-            currentIndex: 0,
-            isUserSelection: true
-          });
-          return true;
-        }
-
         const questions = detectQuestions();
         const index = request.index !== undefined ? request.index : currentQuestionIndex;
         if (questions.length > 0 && index < questions.length) {
@@ -476,7 +517,7 @@
         } else {
           sendResponse({
             success: false,
-            message: 'No questions detected on this webpage. You can highlight text on the page to solve it manually.',
+            message: 'No questions detected on this webpage. You can highlight question text on Newton School to solve it.',
             total: 0
           });
         }
@@ -509,6 +550,6 @@
       default:
         sendResponse({ success: false, message: 'Unknown action' });
     }
-    return true; // Keep message channel open for async response
+    return true;
   });
 })();
