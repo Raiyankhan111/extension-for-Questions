@@ -76,7 +76,8 @@ async function callBackendApi(questionData, config) {
       question: questionData.text,
       options: questionData.options,
       type: questionData.type,
-      explanationLevel: config.explanationLevel
+      explanationLevel: config.explanationLevel,
+      apiKey: config.geminiApiKey
     })
   });
 
