@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const emptyState = document.getElementById('emptyState');
   const initialDetectBtn = document.getElementById('initialDetectBtn');
+  const manualInputBtn = document.getElementById('manualInputBtn');
+  const manualInputContainer = document.getElementById('manualInputContainer');
+  const manualQuestionInput = document.getElementById('manualQuestionInput');
+  const submitManualBtn = document.getElementById('submitManualBtn');
   const questionContainer = document.getElementById('questionContainer');
   const questionTypeBadge = document.getElementById('questionTypeBadge');
   const questionNumberBadge = document.getElementById('questionNumberBadge');
@@ -311,6 +315,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { copyCodeBtn.textContent = 'Copy'; }, 2000);
       });
     }
+  });
+
+  manualInputBtn?.addEventListener('click', () => {
+    const isHidden = manualInputContainer.style.display === 'none';
+    manualInputContainer.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) manualQuestionInput.focus();
+  });
+
+  submitManualBtn?.addEventListener('click', () => {
+    const text = (manualQuestionInput.value || '').trim();
+    if (!text) {
+      alert('Please paste or type your question first.');
+      return;
+    }
+    const qObj = {
+      index: 0,
+      portalNumber: 1,
+      type: text.toLowerCase().includes('def ') || text.toLowerCase().includes('function') ? 'coding' : 'theory',
+      text: text,
+      options: []
+    };
+    currentIndex = 0;
+    totalQuestions = 1;
+    renderQuestion(qObj);
+    handleGenerateSolution();
   });
 
   // Initial scan on popup launch

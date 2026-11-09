@@ -85,8 +85,15 @@
           </svg>
         </div>
         <h3>No Question Loaded</h3>
-        <p>Open your college quiz or problem page, then click <strong>Detect Question</strong> or highlight text on the portal.</p>
-        <button id="initialDetectBtn" class="primary-btn pulse">Scan Webpage</button>
+        <p>Open your college quiz or problem page, then click <strong>Scan Webpage</strong> or highlight text on the portal.</p>
+        <div style="display: flex; gap: 8px; width: 100%; margin-top: 6px;">
+          <button id="initialDetectBtn" class="primary-btn pulse" style="flex: 1;">Scan Webpage</button>
+          <button id="manualInputBtn" class="action-btn secondary-btn" style="flex: 1; justify-content: center;">Paste Question</button>
+        </div>
+        <div id="manualInputContainer" style="display: none; width: 100%; margin-top: 10px;">
+          <textarea id="manualQuestionInput" class="input-field" style="width: 100%; height: 75px; font-size: 12px; margin-bottom: 6px;" placeholder="Paste any question here..."></textarea>
+          <button id="submitManualBtn" class="primary-btn" style="width: 100%; padding: 8px;">Solve Pasted Question</button>
+        </div>
       </div>
 
       <!-- Active Question Section (Hidden initially) -->

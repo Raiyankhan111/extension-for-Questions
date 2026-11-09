@@ -273,13 +273,25 @@
 
     // Multi-platform container selectors (Newton School, Canvas, Moodle, HackerRank, etc.)
     const containerSelectors = [
+      '.Pane1',
+      'div[class*="Pane1"]',
+      'div[class*="split-pane"] > div:first-child',
       '[class*="ProblemStatement"]',
-      '[class*="question-container"]',
       '[class*="problem-statement"]',
+      '[class*="ProblemDescription"]',
+      '[class*="problem-description"]',
+      '[class*="problem_description"]',
+      '[class*="problem_statement"]',
+      '[class*="question-container"]',
       '[class*="questionCard"]',
       '[class*="QuestionCard"]',
       '[class*="question-card"]',
       '[class*="quiz-item"]',
+      '[class*="markdown"]',
+      '[class*="statement"]',
+      '[class*="instruction"]',
+      '[data-testid*="problem"]',
+      '[data-cy*="problem"]',
       '.que',
       '.display_question',
       '.question_holder',
@@ -496,7 +508,44 @@
       }
 
       case 'GET_CURRENT_QUESTION': {
-        const questions = detectQuestions();
+        // 1. Check if user selected/highlighted text with their mouse
+        const selection = window.getSelection() ? window.getSelection().toString().trim() : '';
+        if (selection.length > 10) {
+          sendResponse({
+            success: true,
+            question: {
+              index: 0,
+              portalNumber: 1,
+              type: selection.includes('def ') || selection.includes('function') ? 'coding' : 'theory',
+              text: selection,
+              options: []
+            },
+            total: 1,
+            currentIndex: 0
+          });
+          break;
+        }
+
+        let questions = detectQuestions();
+
+        // 2. Ultra-fallback for Newton School & custom portals: grab main text container
+        if (questions.length === 0) {
+          const mainPane = document.querySelector('.Pane1, [class*="Pane1"], [class*="problem"], [class*="description"], [class*="statement"], [class*="markdown"], main, #root');
+          if (mainPane) {
+            const raw = cleanText(mainPane.innerText || '');
+            if (raw.length > 20) {
+              questions = [{
+                index: 0,
+                portalNumber: 1,
+                type: raw.toLowerCase().includes('write a function') || raw.toLowerCase().includes('input format') ? 'coding' : 'theory',
+                text: raw.substring(0, 1500),
+                options: [],
+                element: mainPane
+              }];
+            }
+          }
+        }
+
         const index = request.index !== undefined ? request.index : currentQuestionIndex;
         if (questions.length > 0 && index < questions.length) {
           currentQuestionIndex = index;
