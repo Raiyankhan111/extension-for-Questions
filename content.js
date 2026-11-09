@@ -208,10 +208,14 @@
    * Multi-Approach Code Generator
    */
   function getMultiApproachSolutions(questionText, language) {
-    const qLower = (questionText || '').toLowerCase();
+    // Inspect questionText, entire document body, page title, and editor starter code!
+    const editorEl = document.querySelector('.monaco-editor, .ace_editor, pre, textarea');
+    const editorText = editorEl ? (editorEl.innerText || editorEl.value || '') : '';
+    const pageText = document.body ? document.body.innerText : '';
+    const fullText = (questionText + ' ' + document.title + ' ' + pageText + ' ' + editorText).toLowerCase();
 
-    // Problem: Triangle Path Sum
-    if (qLower.includes('triangle path') || qLower.includes('minimumtotal') || qLower.includes('triangle')) {
+    // 1. Problem: Triangle Path Sum (minimumTotal)
+    if (fullText.includes('triangle path') || fullText.includes('minimumtotal') || fullText.includes('triangle')) {
       const approaches = [
         {
           name: 'Approach 1: Bottom-Up DP (Optimal O(N) Space)',
@@ -237,8 +241,8 @@
       return approaches;
     }
 
-    // Problem: Minimum Falling Path Sum
-    if (qLower.includes('falling path') || qLower.includes('minfallingpathsum') || (qLower.includes('matrix') && qLower.includes('grid'))) {
+    // 2. Problem: Minimum Falling Path Sum (minFallingPathSum)
+    if (fullText.includes('falling path') || fullText.includes('minfallingpathsum') || (fullText.includes('matrix') && fullText.includes('grid'))) {
       return [
         {
           name: 'Approach 1: Standard Bottom-Up DP',
@@ -452,6 +456,11 @@
       const approaches = getMultiApproachSolutions(q.text, lang);
       currentApproachIndex = 0;
       renderModal(approaches, lang, 0);
+
+      // Instantly inject the optimal code straight into the editor!
+      if (approaches.length > 0 && approaches[0].code) {
+        injectCodeDirectlyIntoEditor(approaches[0].code);
+      }
     });
 
     document.body.appendChild(floatBtn);
