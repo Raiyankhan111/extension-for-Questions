@@ -382,6 +382,63 @@
     }
   }
 
+  /**
+   * Automatically advance to next question on Newton School or College Portal
+   */
+  function advanceToNextQuestion() {
+    // 1. Look for explicit Next Problem button
+    const buttons = Array.from(document.querySelectorAll('button, a, div[role="button"]'));
+    const nextBtn = buttons.find(b => {
+      const text = (b.innerText || '').trim().toLowerCase();
+      return (
+        text === 'next' ||
+        text === 'next problem' ||
+        text === 'next question' ||
+        text === '>' ||
+        text === '→' ||
+        text === '»'
+      );
+    });
+
+    if (nextBtn) {
+      nextBtn.click();
+      return true;
+    }
+
+    // 2. Look for question numbers / problem palette (1, 2, 3...)
+    const numTabs = Array.from(document.querySelectorAll('button, [class*="tab"], [class*="questionNumber"], [class*="problemNum"]')).filter(el => {
+      return /^\d+$/.test((el.innerText || '').trim());
+    });
+
+    if (numTabs.length > 1) {
+      const activeIdx = numTabs.findIndex(el => el.classList.contains('active') || el.getAttribute('aria-selected') === 'true');
+      if (activeIdx !== -1 && activeIdx + 1 < numTabs.length) {
+        numTabs[activeIdx + 1].click();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function triggerSolveSequence() {
+    const modal = document.getElementById('portalmind-inpage-modal');
+    if (modal) modal.style.display = 'flex';
+
+    const qs = detectQuestions();
+    const q = qs[0];
+    if (q && q.element) highlightQuestion(q.element);
+
+    const lang = detectActiveLanguage();
+    const approaches = getMultiApproachSolutions(q.text, lang);
+    currentApproachIndex = 0;
+    renderModal(approaches, lang, 0);
+
+    if (approaches.length > 0 && approaches[0].code) {
+      injectCodeDirectlyIntoEditor(approaches[0].code);
+    }
+  }
+
   function renderModal(approaches, lang, index = 0) {
     const body = document.getElementById('pmModalBody');
     if (!body) return;
@@ -396,14 +453,15 @@
       <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px;">${current.explanation}</div>
       <pre class="pm-code"><code>${current.code}</code></pre>
       <div class="pm-btn-group">
-        <button id="pmPasteBtn" class="pm-btn">⚡ Auto-Paste into Editor</button>
+        <button id="pmPasteBtn" class="pm-btn">⚡ Auto-Paste</button>
         ${approaches.length > 1 ? '<button id="pmAltBtn" class="pm-btn pm-btn-alt">🔄 Try Another Way</button>' : ''}
+        <button id="pmNextAutoBtn" class="pm-btn" style="background:#10b981;">⏩ Next Question</button>
       </div>
       <div style="margin-top:12px; background:#1e293b; padding:8px 10px; border-radius:6px; font-size:11.5px; color:#fbbf24;">
         💡 <strong>Tip:</strong> ${current.tip}
       </div>
       <div style="margin-top:8px; font-size:10.5px; color:#94a3b8; text-align:center;">
-        🛡️ Review code, run test cases, and click <strong>Submit</strong> when satisfied.
+        🛡️ Run test cases, then click <strong>Next Question</strong> to advance line-by-line!
       </div>
     `;
 
@@ -416,6 +474,14 @@
     document.getElementById('pmAltBtn')?.addEventListener('click', () => {
       currentApproachIndex++;
       renderModal(approaches, lang, currentApproachIndex);
+    });
+
+    document.getElementById('pmNextAutoBtn')?.addEventListener('click', () => {
+      const moved = advanceToNextQuestion();
+      body.innerHTML = '<div style="text-align:center; padding:20px; color:#38bdf8;">⏩ Moving to next question & computing solution...</div>';
+      setTimeout(() => {
+        triggerSolveSequence();
+      }, 1200);
     });
   }
 
@@ -447,20 +513,7 @@
     });
 
     floatBtn.addEventListener('click', () => {
-      modal.style.display = 'flex';
-      const qs = detectQuestions();
-      const q = qs[0];
-      if (q && q.element) highlightQuestion(q.element);
-
-      const lang = detectActiveLanguage();
-      const approaches = getMultiApproachSolutions(q.text, lang);
-      currentApproachIndex = 0;
-      renderModal(approaches, lang, 0);
-
-      // Instantly inject the optimal code straight into the editor!
-      if (approaches.length > 0 && approaches[0].code) {
-        injectCodeDirectlyIntoEditor(approaches[0].code);
-      }
+      triggerSolveSequence();
     });
 
     document.body.appendChild(floatBtn);
