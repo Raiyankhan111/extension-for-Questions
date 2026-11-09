@@ -67,22 +67,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Ensure content script is injected
-  async function ensureContentScriptInjected(tabId) {
+  async function ensureContentScriptInjected(tab) {
+    if (!tab || !tab.id) return false;
+    const url = tab.url || '';
+    if (url.startsWith('chrome://') || url.startsWith('chrome-extension://') || url.startsWith('edge://') || url.startsWith('about:')) {
+      return false;
+    }
+
     try {
-      const response = await chrome.tabs.sendMessage(tabId, { action: 'PING' });
+      const response = await chrome.tabs.sendMessage(tab.id, { action: 'PING' });
       if (response && response.success) return true;
     } catch (e) {
-      // Content script not ready; inject programmatically
       try {
         await chrome.scripting.executeScript({
-          target: { tabId },
+          target: { tabId: tab.id },
           files: ['content.js']
         });
-        // Give small delay for initialization
         await new Promise(r => setTimeout(r, 100));
         return true;
       } catch (injectionError) {
-        console.error('Cannot inject content script on this page:', injectionError);
         return false;
       }
     }
@@ -205,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentTabId = tab.id;
 
     setStatus('busy', 'Scanning...');
-    const injected = await ensureContentScriptInjected(tab.id);
+    const injected = await ensureContentScriptInjected(tab);
     if (!injected) {
       setStatus('idle', 'Cannot Access Page');
       alert('PortalMind cannot run on this protected browser page. Please open a college portal or test page.');

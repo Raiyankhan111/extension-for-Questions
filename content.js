@@ -334,39 +334,15 @@
   }
 
   /**
-   * Direct automatic paste into Monaco / Ace Editor & Clipboard
+   * Safe Editor Helper: Uses Clipboard API without violating Newton School's Content Security Policy
    */
   function injectCodeDirectlyIntoEditor(code) {
-    try {
-      const script = document.createElement('script');
-      script.textContent = `
-        (() => {
-          try {
-            if (window.monaco && window.monaco.editor) {
-              const models = window.monaco.editor.getModels();
-              if (models && models.length > 0) {
-                models[0].setValue(${JSON.stringify(code)});
-                return true;
-              }
-            }
-            if (window.ace && window.ace.edit) {
-              const el = document.querySelector('.ace_editor');
-              if (el) {
-                window.ace.edit(el).setValue(${JSON.stringify(code)}, 1);
-                return true;
-              }
-            }
-          } catch (e) {}
-        })();
-      `;
-      (document.head || document.documentElement).appendChild(script);
-      script.remove();
-    } catch (e) {}
-
+    // 1. Copy code to clipboard (Safe and permitted by Chrome Extension permissions)
     try {
       navigator.clipboard.writeText(code);
     } catch (e) {}
 
+    // 2. Focus the editor textarea so Cmd+V pastes instantly
     const editorArea = document.querySelector('.monaco-editor textarea, .ace_editor textarea, textarea');
     if (editorArea) {
       editorArea.focus();
