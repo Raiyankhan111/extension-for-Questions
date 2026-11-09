@@ -414,17 +414,21 @@
       const q = questions[0];
       highlightQuestion(0);
 
-      try {
-        const response = await fetch('https://backend-git-main-raiyankhan111s-projects.vercel.app/api/solve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            question: q.text,
-            options: q.options,
-            type: q.type
-          })
-        });
-        const data = await response.json();
+      // Route solving through Background Service Worker to bypass Newton School CSP / CORS restrictions!
+      chrome.runtime.sendMessage({
+        action: 'SOLVE_QUESTION',
+        questionData: {
+          text: q.text,
+          options: q.options,
+          type: q.type
+        }
+      }, (res) => {
+        if (!res || !res.success || !res.data) {
+          body.innerHTML = '<div style="color:#ef4444;">Solving error. Please try again.</div>';
+          return;
+        }
+
+        const data = res.data;
 
         let html = `<div style="font-weight:700; color:#10b981; font-size:14px; margin-bottom:8px;">${data.answer}</div>`;
         html += `<div style="font-size:12px; color:#cbd5e1; margin-bottom:10px;">${data.explanation}</div>`;
@@ -450,10 +454,7 @@
             setTimeout(() => { if (btn) btn.innerText = 'Copy Code'; }, 2000);
           });
         });
-
-      } catch (err) {
-        body.innerHTML = `<div style="color:#ef4444;">Failed to generate: ${err.message}</div>`;
-      }
+      });
     });
 
     document.body.appendChild(floatBtn);

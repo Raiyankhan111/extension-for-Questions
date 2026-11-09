@@ -41,6 +41,17 @@ function localAiSolver(questionData) {
   const options = questionData.options || [];
   const type = questionData.type || 'mcq';
 
+  // Coding problem: Triangle Path Sum (Newton School)
+  if (qLower.includes('triangle path') || qLower.includes('minimumtotal') || qLower.includes('triangle')) {
+    return {
+      answer: 'Optimal O(n²) Bottom-Up Dynamic Programming solution for Triangle Path Sum.',
+      selectedOption: null,
+      explanation: 'Using bottom-up dynamic programming, we initialize our DP table with the last row of the triangle. We iterate upwards from the second-to-last row down to the root, updating each position dp[c] = triangle[r][c] + min(dp[c], dp[c + 1]). The top element dp[0] contains the global minimum path sum.',
+      code: `def minimumTotal(triangle):\n    # Bottom-up dynamic programming in O(n) space\n    dp = triangle[-1][:]\n    \n    for r in range(len(triangle) - 2, -1, -1):\n        for c in range(len(triangle[r])):\n            dp[c] = triangle[r][c] + min(dp[c], dp[c + 1])\n            \n    return dp[0]\n\n# Time Complexity: O(n^2) where n is number of rows\n# Space Complexity: O(n) auxiliary space`,
+      tips: 'Bottom-up DP avoids boundary checks and extra recursion overhead.'
+    };
+  }
+
   // Coding problem: Minimum Falling Path Sum (Newton School)
   if (qLower.includes('falling path') || qLower.includes('minfallingpathsum') || qLower.includes('matrix') && qLower.includes('grid')) {
     return {
