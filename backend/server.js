@@ -78,7 +78,16 @@ function solveIntelligently(question, options = [], type = 'mcq') {
     };
   }
 
-  if (type === 'coding' || qLower.includes('function') || qLower.includes('reverse') || qLower.includes('linked list')) {
+  if (type === 'coding' || qLower.includes('function') || qLower.includes('def ') || qLower.includes('reverse') || qLower.includes('falling path') || qLower.includes('grid')) {
+    if (qLower.includes('falling path') || qLower.includes('minfallingpathsum')) {
+      return {
+        answer: 'Optimal O(n²) Dynamic Programming solution for Minimum Falling Path Sum.',
+        selectedOption: null,
+        explanation: 'At each row from row 1 to n-1, compute the minimum falling path reaching cell (r, c) by adding grid[r][c] to the minimum of the three valid previous positions: directly above (r-1, c), diagonally left (r-1, c-1), and diagonally right (r-1, c+1). Finally, return the minimum value in the last row.',
+        code: `def minFallingPathSum(grid):\n    n = len(grid)\n    dp = [row[:] for row in grid]\n    \n    for r in range(1, n):\n        for c in range(n):\n            best_prev = dp[r-1][c]\n            if c > 0:\n                best_prev = min(best_prev, dp[r-1][c-1])\n            if c < n - 1:\n                best_prev = min(best_prev, dp[r-1][c+1])\n            dp[r][c] += best_prev\n            \n    return min(dp[-1])\n\n# Time Complexity: O(n^2)\n# Space Complexity: O(n^2)`,
+        tips: 'Transition relation: dp[r][c] = grid[r][c] + min(dp[r-1][c-1], dp[r-1][c], dp[r-1][c+1]).'
+      };
+    }
     return {
       answer: 'Optimal in-place reversal in O(n) time and O(1) auxiliary space.',
       selectedOption: null,

@@ -173,13 +173,12 @@ async function solveQuestion(questionData) {
   const config = await chrome.storage.sync.get(DEFAULT_CONFIG);
 
   let solution;
-  if (config.apiMode === 'direct') {
+  if (config.apiMode === 'direct' && config.geminiApiKey) {
     solution = await callGeminiDirectApi(questionData, config);
   } else {
     try {
       solution = await callBackendApi(questionData, config);
     } catch (backendErr) {
-      // If backend fails but direct Gemini API key is configured, fallback to direct
       if (config.geminiApiKey) {
         console.warn('[PortalMind] Backend failed, attempting fallback to direct Gemini API...', backendErr);
         solution = await callGeminiDirectApi(questionData, config);
