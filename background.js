@@ -3,6 +3,17 @@
  * Self-healing AI routing: Uses Vercel backend with automatic fallback to built-in AI solver.
  */
 
+// Global error shields to prevent Chrome from logging red errors
+self.addEventListener('error', (event) => {
+  console.warn('[PortalMind Worker Suppressed Error]:', event.error);
+  if (event.preventDefault) event.preventDefault();
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+  console.warn('[PortalMind Worker Suppressed Rejection]:', event.reason);
+  if (event.preventDefault) event.preventDefault();
+});
+
 const DEFAULT_CONFIG = {
   apiMode: 'backend',
   backendUrl: 'https://backend-git-main-raiyankhan111s-projects.vercel.app/api/solve',

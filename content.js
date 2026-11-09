@@ -8,6 +8,10 @@
   if (window.__PORTALMIND_LOADED__) return;
   window.__PORTALMIND_LOADED__ = true;
 
+  // Global error shields
+  window.addEventListener('error', (e) => { if (e && e.preventDefault) e.preventDefault(); });
+  window.addEventListener('unhandledrejection', (e) => { if (e && e.preventDefault) e.preventDefault(); });
+
   let cachedQuestions = [];
   let currentQuestionIndex = 0;
   let activeHighlightElement = null;
