@@ -330,17 +330,52 @@
   }
 
   /**
-   * Paste code into editor or copy with instant feedback
+   * Direct automatic paste into Monaco / Ace Editor & Clipboard
    */
+  function injectCodeDirectlyIntoEditor(code) {
+    try {
+      const script = document.createElement('script');
+      script.textContent = `
+        (() => {
+          try {
+            if (window.monaco && window.monaco.editor) {
+              const models = window.monaco.editor.getModels();
+              if (models && models.length > 0) {
+                models[0].setValue(${JSON.stringify(code)});
+                return true;
+              }
+            }
+            if (window.ace && window.ace.edit) {
+              const el = document.querySelector('.ace_editor');
+              if (el) {
+                window.ace.edit(el).setValue(${JSON.stringify(code)}, 1);
+                return true;
+              }
+            }
+          } catch (e) {}
+        })();
+      `;
+      (document.head || document.documentElement).appendChild(script);
+      script.remove();
+    } catch (e) {}
+
+    try {
+      navigator.clipboard.writeText(code);
+    } catch (e) {}
+
+    const editorArea = document.querySelector('.monaco-editor textarea, .ace_editor textarea, textarea');
+    if (editorArea) {
+      editorArea.focus();
+    }
+  }
+
   function handlePasteIntoEditor(code) {
-    navigator.clipboard.writeText(code).then(() => {
-      // Find editor and focus
-      const editorArea = document.querySelector('.monaco-editor textarea, .ace_editor textarea, textarea');
-      if (editorArea) {
-        editorArea.focus();
-      }
-      alert('Code Copied to Clipboard! Click inside your Newton School editor and press Cmd + V (or Ctrl + V) to paste.');
-    });
+    injectCodeDirectlyIntoEditor(code);
+    const pasteBtn = document.getElementById('pmPasteBtn');
+    if (pasteBtn) {
+      pasteBtn.innerText = '✅ Code Injected!';
+      setTimeout(() => { if (pasteBtn) pasteBtn.innerText = '⚡ Auto-Paste into Editor'; }, 2000);
+    }
   }
 
   function renderModal(approaches, lang, index = 0) {
@@ -357,7 +392,7 @@
       <div style="font-size:12px; color:#cbd5e1; margin-bottom:10px;">${current.explanation}</div>
       <pre class="pm-code"><code>${current.code}</code></pre>
       <div class="pm-btn-group">
-        <button id="pmPasteBtn" class="pm-btn">⚡ Copy & Paste into Editor</button>
+        <button id="pmPasteBtn" class="pm-btn">⚡ Auto-Paste into Editor</button>
         ${approaches.length > 1 ? '<button id="pmAltBtn" class="pm-btn pm-btn-alt">🔄 Try Another Way</button>' : ''}
       </div>
       <div style="margin-top:12px; background:#1e293b; padding:8px 10px; border-radius:6px; font-size:11.5px; color:#fbbf24;">
@@ -421,6 +456,20 @@
 
     document.body.appendChild(floatBtn);
   }
+
+  // Keyboard shortcut: Option+S (Mac) / Alt+S (Windows) to instantly solve and auto-paste!
+  window.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      const qs = detectQuestions();
+      const q = qs[0];
+      const lang = detectActiveLanguage();
+      const approaches = getMultiApproachSolutions(q.text, lang);
+      if (approaches.length > 0) {
+        injectCodeDirectlyIntoEditor(approaches[0].code);
+      }
+    }
+  });
 
   detectQuestions();
   if (document.body) {
